@@ -1,5 +1,6 @@
 <template>
   <div class="hello">
+    <div>Test label: <router-link to="/label">Label</router-link></div>
     <div>
       <label for="user">Name:</label>
       <br>
@@ -26,7 +27,7 @@
 
 <script>
 import kurentoUtils from 'kurento-utils'
-const ws = new WebSocket('wss://192.168.1.52:8890/call')
+const ws = new WebSocket('wss://aiwo.com:8443/call')
 // var webRtcPeer
 
 export default {
