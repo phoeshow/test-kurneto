@@ -14,9 +14,15 @@
     <div>
       <button @click="call">Call</button>
       <button @click="stop">Stop</button>
+      <button @click="saveVideo">save</button>
+      <button @click="sendChannelData" :disabled="webRtcPeer === null">send</button>
     </div>
+    <div v-if="imgurl">
+      <img :src="imgurl">
+    </div>
+    <canvas ref="canvas"></canvas>
     <div>
-      <video ref="inputVideo" autoplay width="640px" height="480px"></video>
+      <video ref="inputVideo" id="inputVideo" autoplay width="640px" height="480px"></video>
     </div>
     <div>
       <video ref="outputVideo" autoplay width="640px" height="480px"></video>
@@ -27,6 +33,7 @@
 <script>
 import kurentoUtils from 'kurento-utils'
 const ws = new WebSocket('wss://192.168.1.52:8890/call')
+// const ws = new WebSocket('wss://192.168.1.52:8890/call')
 // var webRtcPeer
 
 export default {
@@ -36,7 +43,14 @@ export default {
       userName: '',
       peer: '',
       webRtcPeer: null,
-      from: ''
+      from: '',
+      sendMsg: '',
+      context: null,
+      w: null,
+      h: null,
+      video: null,
+      canvas: null,
+      imgurl: ''
     }
   },
 
@@ -68,6 +82,17 @@ export default {
           break
       }
     }
+    this.video = this.$refs['inputVideo']
+    this.canvas = this.$refs['canvas']
+    this.context = this.canvas.getContext('2d')
+    let ratio
+    this.video.addEventListener('loadedmetadata', () => {
+      ratio = this.video.videoWidth / this.video.videoHeight
+      this.w = this.video.videoWidth - 100
+      this.h = parseInt(this.w / ratio, 10)
+      this.canvas.width = this.w
+      this.canvas.height = this.h
+    }, false)
   },
 
   methods: {
@@ -83,6 +108,11 @@ export default {
       let option = {
         localVideo: this.$refs['inputVideo'],
         remoteVideo: this.$refs['outputVideo'],
+        dataChannelConfig: {
+          id: this.getChannelName(),
+          onmessage: this.onMessage
+        },
+        dataChannels: true,
         onicecandidate: this.onIceCandidate,
         onerror: this.onError
       }
@@ -137,11 +167,15 @@ export default {
     onError () {
       alert('发生错误，内容待定')
     },
-
     call () {
       let options = {
         localVideo: this.$refs['inputVideo'],
         remoteVideo: this.$refs['outputVideo'],
+        dataChannelConfig: {
+          id: this.getChannelName(),
+          onmessage: this.onMessage
+        },
+        dataChannels: true,
         onicecandidate: this.onIceCandidate,
         onerror: this.onError
       }
@@ -176,6 +210,24 @@ export default {
         id: 'stop'
       }
       this.sendMessage(message)
+    },
+    sendChannelData () {
+      this.webRtcPeer.send(this.sendMsg)
+      // this.webRtcPeer.send('123231')
+    },
+    getChannelName () {
+      return 'incomingCallResponse'
+    },
+    onMessage (message) {
+      console.log(message)
+      this.imgurl = message.data
+    },
+    saveVideo () {
+      this.context.fillRect(0, 0, this.w, this.h)
+      this.context.drawImage(this.video, 0, 0, this.w, this.h)
+      this.canvas.toBlob((blob) => {
+        this.sendMsg = blob
+      })
     },
     sendMessage (message) {
       let msg = JSON.stringify(message)
