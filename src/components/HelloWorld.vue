@@ -21,8 +21,23 @@
     <div v-if="imgurl">
       <img :src="imgurl">
     </div>
-    <div ref="container" class="container" @mousedown="handlerMouseDown" @mouseup="handlerMouseUp" @mousemove="handlerMouseMove" @mouseout="handlerMouseOut">
+    <div
+      ref="container"
+      class="container"
+      @mousedown="handlerMouseDown"
+      @mouseup="handlerMouseUp"
+      @mousemove="handlerMouseMove"
+      @mouseout="handlerMouseOut"
+    >
     </div>
+    <p>
+      mode:
+      <input type="radio" name="mode" value="rect" v-model="mode">
+      <label for="">Rect</label>
+      <input type="radio" name="mode" value="brush" v-model="mode">
+      <label for="">Brush</label>
+      <!-- <button @click="lineX">Line</button> -->
+    </p>
     <div>
       <video ref="inputVideo" id="inputVideo" autoplay width="720px" height="480px"></video>
     </div>
@@ -47,11 +62,7 @@ export default {
       webRtcPeer: null,
       from: '',
       sendMsg: '',
-      context: null,
-      w: null,
-      h: null,
       video: null,
-      canvas: null,
       imgurl: '',
       imageData: '',
       // zrender
@@ -105,14 +116,6 @@ export default {
           break
       }
     }
-    // this.video = this.$refs['inputVideo']
-    // this.canvas = document.createElement('canvas')
-    // this.video.addEventListener('loadedmetadata', () => {
-    //   this.w = this.video.videoWidth
-    //   this.h = this.video.videoHeight
-    //   this.canvas.width = this.w
-    //   this.canvas.height = this.h
-    // }, false)
   },
 
   methods: {
@@ -248,7 +251,7 @@ export default {
       this.sendMessage(message)
     },
     sendChannelData () {
-      this.sendMsg = this.canvas.toDataURL()
+      this.sendMsg = document.querySelector('canvas').toDataURL()
       let delay = 10
       let charSlice = 10000
       let dataSent = 0
@@ -263,6 +266,7 @@ export default {
         dataSent = slideEndIndex
         if (dataSent + 1 >= this.sendMsg.length) {
           this.webRtcPeer.send('\n')
+          zrender.dispose(this.zr)
           clearInterval(intervalID)
         }
       }, delay)
@@ -288,8 +292,8 @@ export default {
         style: {
           x: 0,
           y: 0,
-          height: 720,
-          width: 480,
+          height: 480,
+          width: 720,
           image: this.webRtcPeer.currentFrame
         },
         cursor: 'crosshair'
