@@ -8,6 +8,8 @@
       <label for="">Rect</label>
       <input type="radio" name="mode" value="brush" v-model="mode">
       <label for="">Brush</label>
+      <input type="radio" name="mode" value="arrow" v-model="mode">
+      <label for="">Arrow</label>
       <!-- <button @click="lineX">Line</button> -->
     </p>
   </div>
@@ -43,7 +45,8 @@ export default {
         x: null,
         y: null
       },
-      mouseDown: false
+      mouseDown: false,
+      arrow: null
     }
   },
   mounted () {
@@ -82,6 +85,9 @@ export default {
         case 'brush':
           this.startBrushLine()
           break
+        case 'arrow':
+          this.startArrow()
+          break
         default:
 
           break
@@ -106,6 +112,9 @@ export default {
           case 'brush':
             this.duringBrushLine()
             break
+          case 'arrow':
+            this.duringArrow()
+            break
           default:
 
             break
@@ -116,6 +125,65 @@ export default {
       this.mouseDown = false
       this.brush = null
       this.brushPos = []
+    },
+    // 绘制箭头
+    startArrow () {
+      let options = {
+        shape: {
+          x1: this.mouseDownPos.x,
+          y1: this.mouseDownPos.y,
+          x2: this.mouseDownPos.x,
+          y2: this.mouseDownPos.y
+        },
+        style: {
+          fill: 'none',
+          stroke: '#F00'
+        },
+        cursor: 'crosshair'
+      }
+      this.arrow = {}
+      this.arrow['line'] = new zrender.Line(options)
+      this.zr.add(this.arrow['line'])
+    },
+    duringArrow () {
+      this.arrow['line'].attr('shape', {
+        x2: this.mouseMovePos.x,
+        y2: this.mouseMovePos.y
+      })
+      let angle = Math.atan2(this.mouseMovePos.y - this.mouseDownPos.y, this.mouseMovePos.x - this.mouseDownPos.x) * 180 / Math.PI
+      let angle1 = (angle + 30) * Math.PI / 180
+      let angle2 = (angle - 30) * Math.PI / 180
+      let topX = this.mouseMovePos.x - 10 * Math.cos(angle1)
+      let topY = this.mouseMovePos.y - 10 * Math.sin(angle1)
+      let botX = this.mouseMovePos.x - 10 * Math.cos(angle2)
+      let botY = this.mouseMovePos.y - 10 * Math.sin(angle2)
+      let arrowPointerOptions = {
+        shape: {
+          points: [
+            [this.mouseMovePos.x, this.mouseMovePos.y],
+            [topX, topY],
+            [botX, botY]
+          ]
+        },
+        style: {
+          fill: '#F00',
+          stroke: '#F00'
+        },
+        cursor: 'crosshair'
+      }
+      console.log(arrowPointerOptions)
+      if (this.arrow['pointer']) {
+        this.arrow['pointer'].attr('shape', {
+          points: [
+            [this.mouseMovePos.x, this.mouseMovePos.y],
+            [topX, topY],
+            [botX, botY]
+          ]
+        })
+      } else {
+        this.arrow['pointer'] = new zrender.Polygon(arrowPointerOptions)
+        this.zr.add(this.arrow['pointer'])
+      }
     },
     // 开始绘制矩形
     startDrawRect () {
