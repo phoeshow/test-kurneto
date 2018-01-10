@@ -132,6 +132,7 @@ export default {
         audio: true,
         video: {
           width: 720,
+          height: 480,
           framerate: 15
         }
       }
@@ -203,6 +204,7 @@ export default {
         audio: true,
         video: {
           width: 720,
+          height: 480,
           framerate: 15
         }
       }
@@ -272,7 +274,7 @@ export default {
       }, delay)
     },
     getChannelName () {
-      return 'incomingCallResponse'
+      return 'incomingCallResponse' + parseInt(Math.random() * 100)
     },
     onMessage (event) {
       if (event.data === '\n') {
@@ -287,6 +289,7 @@ export default {
       // this.context.drawImage(this.video, 0, 0, this.w, this.h)
       // let img = document.createElement('img')
       // img.src = this.webRtcPeer.currentFrame.toDataURL()
+      console.log(this.webRtcPeer)
       this.zr = zrender.init(this.$refs['container'])
       let image = new zrender.Image({
         style: {
