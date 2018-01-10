@@ -281,8 +281,8 @@ export default {
     saveVideo () {
       // this.context.fillRect(0, 0, this.w, this.h)
       // this.context.drawImage(this.video, 0, 0, this.w, this.h)
-      let img = document.createElement('img')
-      img.src = this.webRtcPeer.currentFrame.toDataURL()
+      // let img = document.createElement('img')
+      // img.src = this.webRtcPeer.currentFrame.toDataURL()
       this.zr = zrender.init(this.$refs['container'])
       let image = new zrender.Image({
         style: {
@@ -290,7 +290,7 @@ export default {
           y: 0,
           height: 720,
           width: 480,
-          image: img
+          image: this.webRtcPeer.currentFrame
         },
         cursor: 'crosshair'
       })
