@@ -22,10 +22,10 @@
     </div>
     <canvas ref="canvas"></canvas>
     <div>
-      <video ref="inputVideo" id="inputVideo" autoplay width="640px" height="480px"></video>
+      <video ref="inputVideo" id="inputVideo" autoplay width="720px" height="480px"></video>
     </div>
     <div>
-      <video ref="outputVideo" autoplay width="640px" height="480px"></video>
+      <video ref="outputVideo" autoplay width="720px" height="480px"></video>
     </div>
   </div>
 </template>
@@ -50,7 +50,8 @@ export default {
       h: null,
       video: null,
       canvas: null,
-      imgurl: ''
+      imgurl: '',
+      imageData: ''
     }
   },
 
@@ -85,11 +86,9 @@ export default {
     this.video = this.$refs['inputVideo']
     this.canvas = this.$refs['canvas']
     this.context = this.canvas.getContext('2d')
-    let ratio
     this.video.addEventListener('loadedmetadata', () => {
-      ratio = this.video.videoWidth / this.video.videoHeight
-      this.w = this.video.videoWidth - 100
-      this.h = parseInt(this.w / ratio, 10)
+      this.w = this.video.videoWidth
+      this.h = this.video.videoHeight
       this.canvas.width = this.w
       this.canvas.height = this.h
     }, false)
@@ -105,6 +104,13 @@ export default {
     },
 
     incomingCall (message) {
+      let constraints = {
+        audio: true,
+        video: {
+          width: 720,
+          framerate: 15
+        }
+      }
       let option = {
         localVideo: this.$refs['inputVideo'],
         remoteVideo: this.$refs['outputVideo'],
@@ -114,6 +120,7 @@ export default {
         },
         dataChannels: true,
         onicecandidate: this.onIceCandidate,
+        mediaConstraints: constraints,
         onerror: this.onError
       }
       this.from = message.from
@@ -168,6 +175,13 @@ export default {
       alert('发生错误，内容待定')
     },
     call () {
+      let constraints = {
+        audio: true,
+        video: {
+          width: 720,
+          framerate: 15
+        }
+      }
       let options = {
         localVideo: this.$refs['inputVideo'],
         remoteVideo: this.$refs['outputVideo'],
@@ -177,6 +191,7 @@ export default {
         },
         dataChannels: true,
         onicecandidate: this.onIceCandidate,
+        mediaConstraints: constraints,
         onerror: this.onError
       }
 
@@ -212,22 +227,39 @@ export default {
       this.sendMessage(message)
     },
     sendChannelData () {
-      this.webRtcPeer.send(this.sendMsg)
-      // this.webRtcPeer.send('123231')
+      this.sendMsg = this.canvas.toDataURL()
+      let delay = 10
+      let charSlice = 10000
+      let dataSent = 0
+      let intervalID = 0
+
+      intervalID = setInterval(() => {
+        let slideEndIndex = dataSent + charSlice
+        if (slideEndIndex > this.sendMsg.length) {
+          slideEndIndex = this.sendMsg.length
+        }
+        this.webRtcPeer.send(this.sendMsg.slice(dataSent, slideEndIndex))
+        dataSent = slideEndIndex
+        if (dataSent + 1 >= this.sendMsg.length) {
+          this.webRtcPeer.send('\n')
+          clearInterval(intervalID)
+        }
+      }, delay)
     },
     getChannelName () {
       return 'incomingCallResponse'
     },
-    onMessage (message) {
-      console.log(message)
-      this.imgurl = message.data
+    onMessage (event) {
+      if (event.data === '\n') {
+        this.imgurl = this.imageData
+        this.imageData = ''
+      } else {
+        this.imageData += event.data
+      }
     },
     saveVideo () {
       this.context.fillRect(0, 0, this.w, this.h)
       this.context.drawImage(this.video, 0, 0, this.w, this.h)
-      this.canvas.toBlob((blob) => {
-        this.sendMsg = blob
-      })
     },
     sendMessage (message) {
       let msg = JSON.stringify(message)
