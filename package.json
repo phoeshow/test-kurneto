@@ -13,9 +13,11 @@
   "dependencies": {
     "axios": "^0.17.1",
     "kurento-utils": "^6.6.3",
+    "lodash": "^4.17.4",
     "vue": "^2.5.2",
     "vue-router": "^3.0.1",
-    "vuex": "^3.0.1"
+    "vuex": "^3.0.1",
+    "zrender": "^3.7.4"
   },
   "devDependencies": {
     "autoprefixer": "^7.1.2",

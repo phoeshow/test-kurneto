@@ -1,5 +1,6 @@
 <template>
   <div class="hello">
+    <div>Test label: <router-link to="/label">Label</router-link></div>
     <div>
       <label for="user">Name:</label>
       <br>
@@ -20,7 +21,8 @@
     <div v-if="imgurl">
       <img :src="imgurl">
     </div>
-    <canvas ref="canvas"></canvas>
+    <div ref="container" class="container" @mousedown="handlerMouseDown" @mouseup="handlerMouseUp" @mousemove="handlerMouseMove" @mouseout="handlerMouseOut">
+    </div>
     <div>
       <video ref="inputVideo" id="inputVideo" autoplay width="720px" height="480px"></video>
     </div>
@@ -32,9 +34,9 @@
 
 <script>
 import kurentoUtils from 'kurento-utils'
+import zrender from 'zrender'
+import _ from 'lodash'
 const ws = new WebSocket('wss://192.168.1.52:8890/call')
-// const ws = new WebSocket('wss://192.168.1.52:8890/call')
-// var webRtcPeer
 
 export default {
   name: 'HelloWorld',
@@ -51,7 +53,27 @@ export default {
       video: null,
       canvas: null,
       imgurl: '',
-      imageData: ''
+      imageData: '',
+      // zrender
+      mode: '',
+      zr: null,
+      shape: 'rect',
+      rect: null,
+      brush: null,
+      brushPos: [],
+      mouseDownPos: {
+        x: null,
+        y: null
+      },
+      mouseUpPos: {
+        x: null,
+        y: null
+      },
+      mouseMovePos: {
+        x: null,
+        y: null
+      },
+      mouseDown: false
     }
   },
 
@@ -83,15 +105,14 @@ export default {
           break
       }
     }
-    this.video = this.$refs['inputVideo']
-    this.canvas = this.$refs['canvas']
-    this.context = this.canvas.getContext('2d')
-    this.video.addEventListener('loadedmetadata', () => {
-      this.w = this.video.videoWidth
-      this.h = this.video.videoHeight
-      this.canvas.width = this.w
-      this.canvas.height = this.h
-    }, false)
+    // this.video = this.$refs['inputVideo']
+    // this.canvas = document.createElement('canvas')
+    // this.video.addEventListener('loadedmetadata', () => {
+    //   this.w = this.video.videoWidth
+    //   this.h = this.video.videoHeight
+    //   this.canvas.width = this.w
+    //   this.canvas.height = this.h
+    // }, false)
   },
 
   methods: {
@@ -258,14 +279,130 @@ export default {
       }
     },
     saveVideo () {
-      this.context.fillRect(0, 0, this.w, this.h)
-      this.context.drawImage(this.video, 0, 0, this.w, this.h)
+      // this.context.fillRect(0, 0, this.w, this.h)
+      // this.context.drawImage(this.video, 0, 0, this.w, this.h)
+      let img = document.createElement('img')
+      img.src = this.webRtcPeer.currentFrame.toDataURL()
+      this.zr = zrender.init(this.$refs['container'])
+      let image = new zrender.Image({
+        style: {
+          x: 0,
+          y: 0,
+          height: 720,
+          width: 480,
+          image: img
+        },
+        cursor: 'crosshair'
+      })
+
+      this.zr.add(image)
     },
     sendMessage (message) {
       let msg = JSON.stringify(message)
       console.log('发送:' + msg)
       ws.send(msg)
-    }
+    },
+
+    // zrender绘图
+    handlerMouseDown (e) {
+      this.rect = null
+      this.brush = null
+      this.brushPos = []
+      this.mouseDown = true
+      this.mouseDownPos['x'] = e.zrX
+      this.mouseDownPos['y'] = e.zrY
+
+      switch (this.mode) {
+        case 'rect':
+          this.startDrawRect()
+          break
+        case 'brush':
+          this.startBrushLine()
+          break
+        default:
+
+          break
+      }
+    },
+
+    handlerMouseUp (e) {
+      this.mouseDown = false
+      this.mouseUpPos.x = e.zrX
+      this.mouseUpPos.y = e.zrY
+    },
+
+    handlerMouseMove (e) {
+      if (this.mouseDown) {
+        this.mouseMovePos.x = e.zrX
+        this.mouseMovePos.y = e.zrY
+
+        switch (this.mode) {
+          case 'rect':
+            this.duringDrawRect()
+            break
+          case 'brush':
+            this.duringBrushLine()
+            break
+          default:
+
+            break
+        }
+      }
+    },
+    handlerMouseOut () {
+      this.mouseDown = false
+      this.brush = null
+      this.brushPos = []
+    },
+    // 开始绘制矩形
+    startDrawRect () {
+      let option = {
+        shape: {
+          x: this.mouseDownPos['x'],
+          y: this.mouseDownPos['y'],
+          width: 0,
+          height: 0
+        },
+        style: {
+          fill: 'none',
+          stroke: '#F00'
+        },
+        cursor: 'crosshair'
+      }
+      this.rect = new zrender.Rect(option)
+      this.zr.add(this.rect)
+    },
+    // 绘制矩形
+    duringDrawRect () {
+      this.rect.attr('shape', {
+        width: this.mouseMovePos.x - this.mouseDownPos.x,
+        height: this.mouseMovePos.y - this.mouseDownPos.y
+      })
+    },
+    // 开始绘制自由线条
+    startBrushLine () {
+      this.brushPos.push([this.mouseDownPos.x, this.mouseDownPos.y])
+      this.brush = new zrender.Polyline({
+        position: [0, 0],
+        style: {
+          stroke: 'rgba(220, 20, 60, 0.8)',
+          lineWidth: 1
+        },
+        shape: {
+          smooth: 'spline',
+          points: this.brushPos
+        },
+        cursor: 'crosshair'
+      })
+      this.zr.add(this.brush)
+    },
+    // 绘制自由线条
+    duringBrushLine: _.throttle(function () {
+      this.brushPos.push([this.mouseMovePos.x, this.mouseMovePos.y])
+      this.brush.attr('shape', {
+        points: this.brushPos
+      })
+    }, 1000 / 16)
   }
 }
 </script>
@@ -285,5 +422,10 @@ li {
 }
 a {
   color: #42b983;
+}
+.container{
+  width: 720px;
+  height: 480px;
+  margin:0 auto;
 }
 </style>
