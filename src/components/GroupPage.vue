@@ -28,7 +28,7 @@ export default {
             if (parseMsg.data) {
               parseMsg.data.forEach(item => {
                 this.participant = new Participant(item, this.ws)
-                this.participant.createKurento(item)
+                this.participant.createKurento(this.$route.params.userId)
               })
             } else {
               this.participant = new Participant(this.$route.params.userId, this.ws)
