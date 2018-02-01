@@ -29,11 +29,11 @@ export default {
               parseMsg.data.forEach(item => {
                 this.participant = new Participant(item, this.ws)
                 this.participant.createKurento(this.$route.params.userId)
+                this.participants.push(this.participant)
               })
-            } else {
-              this.participant = new Participant(this.$route.params.userId, this.ws)
-              this.participant.createKurento(this.$route.params.userId)
             }
+            this.participant = new Participant(this.$route.params.userId, this.ws)
+            this.participant.createKurento(this.$route.params.userId)
             this.participants.push(this.participant)
             break
           case 'newParticipantArrived': // 新加入的人
