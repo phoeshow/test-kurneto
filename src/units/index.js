@@ -20,6 +20,7 @@ class Participant {
       onicecandidate: (candidate) => {
         var message = {
           id: 'onIceCandidate',
+          name: this.id,
           candidate: candidate
         }
         sendMessage(message, this.ws)
