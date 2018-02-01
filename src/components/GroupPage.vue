@@ -38,7 +38,7 @@ export default {
             break
           case 'newParticipantArrived': // 新加入的人
             this.participant = new Participant(parseMsg.name, this.ws)
-            this.participant.createKurento(parseMsg.name)
+            this.participant.createKurento(this.$route.params.userId)
             this.participants.push(this.participant)
             break
           // case 'receiveVideoFrom': // 接收某个指定参与者的视频和音频
