@@ -3,12 +3,14 @@ import kurentoUtils from 'kurento-utils'
 class Participant {
   constructor (id, ws) {
     this.id = id
-    this.remoteSteam = ''
-    this.localSteam = ''
+    this.stream = ''
     this.webRtcPeer = null
     this.ws = ws
+    this.senderId = null
   }
-  createKurento () {
+  createKurento (id) {
+    this.senderId = id
+    let kurentoType = id === this.id ? 'WebRtcPeerSendonly' : 'WebRtcPeerRecvonly'
     let option = {
       dataChannelConfig: {
         id: '666',
@@ -24,7 +26,7 @@ class Participant {
       },
       onerror: this.onError
     }
-    this.webRtcPeer = new kurentoUtils.WebRtcPeer.WebRtcPeerSendrecv(option, (error) => {
+    this.webRtcPeer = new kurentoUtils.WebRtcPeer[kurentoType](option, (error) => {
       if (error) {
         return console.error(error)
       }
@@ -49,8 +51,11 @@ class Participant {
   receiveVideoAnswer (message) {
     this.webRtcPeer.processAnswer(message.sdpAnswer, (error) => {
       if (error) { return console.error(error) }
-      this.remoteSteam = window.URL.createObjectURL(this.webRtcPeer.getRemoteStream())
-      this.localSteam = window.URL.createObjectURL(this.webRtcPeer.getLocalStream())
+      if (this.senderId === this.id) {
+        this.stream = window.URL.createObjectURL(this.webRtcPeer.getLocalStream())
+      } else {
+        this.stream = window.URL.createObjectURL(this.webRtcPeer.getRemoteStream())
+      }
     })
   }
   onError () {

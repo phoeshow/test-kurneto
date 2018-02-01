@@ -1,6 +1,6 @@
 <template>
   <div>
-    <video style="background: #000; margin: 10px;" autoplay :src="participant.id === $route.params.userId ? participant.localSteam : participant.remoteSteam" v-for="participant in participants" :key="participant.id"></video>
+    <video style="background: #000; margin: 10px;" :class="participant.id" autoplay :src="participant.stream" v-for="participant in participants" :key="participant.id"></video>
   </div>
 </template>
 
@@ -24,20 +24,21 @@ export default {
         let parseMsg = JSON.parse(message.data)
         switch (parseMsg.id) {
           case 'existingParticipants': // 已存在的参与者
+            this.participants = []
             if (parseMsg.data) {
               parseMsg.data.forEach(item => {
                 this.participant = new Participant(item, this.ws)
-                this.participant.createKurento()
+                this.participant.createKurento(item)
               })
             } else {
               this.participant = new Participant(this.$route.params.userId, this.ws)
-              this.participant.createKurento()
+              this.participant.createKurento(this.$route.params.userId)
             }
             this.participants.push(this.participant)
             break
           case 'newParticipantArrived': // 新加入的人
             this.participant = new Participant(parseMsg.name, this.ws)
-            this.participant.createKurento()
+            this.participant.createKurento(parseMsg.name)
             this.participants.push(this.participant)
             break
           // case 'receiveVideoFrom': // 接收某个指定参与者的视频和音频
@@ -47,7 +48,12 @@ export default {
             this.participant.addIceCandidate(parseMsg)
             break
           case 'receiveVideoAnswer': // 接收某个指定参与者的视频和音频的应答
-            this.participant.receiveVideoAnswer(parseMsg)
+            let _id = parseMsg.name
+            this.participants.map(item => {
+              if (item.id === _id) {
+                item.receiveVideoAnswer(parseMsg)
+              }
+            })
             break
           // case 'onIceCandidate': // 客户端发送IceCandidate
 

@@ -15,7 +15,9 @@ module.exports = {
         target: 'https://192.168.1.136:11010',
         pathRewrite: {
           '^/room': '/room'
-        }
+        },
+        secure: false,
+        changeOrigin: true
       }
     },
 

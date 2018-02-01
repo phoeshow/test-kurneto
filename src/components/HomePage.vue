@@ -19,7 +19,7 @@ export default {
   methods: {
     initRoom () {
       axios({
-        url: 'https://192.168.1.136:11010/room/init',
+        url: '/room/init',
         method: 'get',
         params: {
           tenantId: this.tenantId,
